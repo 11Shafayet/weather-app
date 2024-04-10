@@ -119,7 +119,7 @@ const Weather: FC = () => {
       const newData = await response.json();
       setHourlyData(newData.list);
 
-      const fullWeekData = newData.list.filter((_, index) => index % 8 === 0);
+      const fullWeekData = newData.list.filter((_: any, index: number) => index % 8 === 0);
       setWeeklyData(fullWeekData);
     } catch (error) {
       console.error('Fetching data failed:', error);
