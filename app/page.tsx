@@ -1,20 +1,30 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, FC } from 'react';
 import Link from 'next/link';
 import { debounce } from 'lodash';
 
-const Home = () => {
-  const [data, setData] = useState([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchedText, setsearchedText] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const loader = useRef(null);
+interface CityRecord {
+  [key: string]: any;
+}
 
-  // observer for infinite scroll
+const Home: FC = () => {
+  const [data, setData] = useState<CityRecord[]>([]);
+  const [page, setPage] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [searchedText, setsearchedText] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<CityRecord[]>([]);
+  const loader = useRef<HTMLDivElement>(null);
+
+  const handleObserver = (entities: IntersectionObserverEntry[]) => {
+    const target = entities[0];
+    if (target.isIntersecting && hasMore) {
+      setPage((prevPage) => prevPage + 1);
+    }
+  };
+
   useEffect(() => {
-    var observer = new IntersectionObserver(handleObserver, {
+    const observer = new IntersectionObserver(handleObserver, {
       root: null,
       rootMargin: '20px',
       threshold: 1.0,
@@ -22,21 +32,9 @@ const Home = () => {
     if (loader.current) {
       observer.observe(loader.current);
     }
-
-    // Cleanup observer on component unmount
-    return () => observer && observer.disconnect();
+    return () => observer.disconnect();
   }, []);
-  const handleObserver = (entities) => {
-    const target = entities[0];
-    if (target.isIntersecting && hasMore) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
 
-  // data fetching
-  useEffect(() => {
-    fetchData();
-  }, [page]);
   const fetchData = async () => {
     try {
       const response = await fetch(
@@ -55,18 +53,11 @@ const Home = () => {
     }
   };
 
-  // search functionality
-  const debouncedFetch = useRef(
-    debounce((nextValue) => fetchSearchedData(nextValue), 500)
-  ).current;
   useEffect(() => {
-    if (searchedText.length > 0) {
-      debouncedFetch(searchedText);
-    } else {
-      setSuggestions([]);
-    }
-  }, [searchedText]);
-  const fetchSearchedData = async (value) => {
+    fetchData();
+  }, [page]);
+
+  const fetchSearchedData = async (value: string) => {
     try {
       const response = await fetch(
         `https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/geonames-all-cities-with-a-population-1000/records?where=search(ascii_name,"${value}")`
@@ -81,6 +72,18 @@ const Home = () => {
       console.error('Fetching data failed:', error);
     }
   };
+
+  useEffect(() => {
+    if (searchedText.length > 0) {
+      debouncedFetch(searchedText);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchedText]);
+
+  const debouncedFetch = useRef(
+    debounce((nextValue: string) => fetchSearchedData(nextValue), 500)
+  ).current;
 
   return (
     <section className="min-h-screen flex justify-center items-center py-12 md:py-20">
