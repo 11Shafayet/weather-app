@@ -3,10 +3,21 @@
 import { useEffect, useState, useRef, FC } from 'react';
 import Link from 'next/link';
 import { debounce } from 'lodash';
+import { FaFilter } from 'react-icons/fa6';
 
 interface CityRecord {
   [key: string]: any;
 }
+
+const timezoneList = [
+  'Asia',
+  'Europe',
+  'America',
+  'Australia',
+  'Africa',
+  'Indian',
+  'Pacific',
+];
 
 const Home: FC = () => {
   const [data, setData] = useState<CityRecord[]>([]);
@@ -16,13 +27,13 @@ const Home: FC = () => {
   const [suggestions, setSuggestions] = useState<CityRecord[]>([]);
   const loader = useRef<HTMLDivElement>(null);
 
+  // infinite scroll
   const handleObserver = (entities: IntersectionObserverEntry[]) => {
     const target = entities[0];
     if (target.isIntersecting && hasMore) {
       setPage((prevPage) => prevPage + 1);
     }
   };
-
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       root: null,
@@ -35,6 +46,10 @@ const Home: FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  // initial data data fetching
+  useEffect(() => {
+    fetchData();
+  }, [page]);
   const fetchData = async () => {
     try {
       const response = await fetch(
@@ -53,10 +68,14 @@ const Home: FC = () => {
     }
   };
 
+  // search functionality
   useEffect(() => {
-    fetchData();
-  }, [page]);
-
+    if (searchedText.length > 0) {
+      debouncedFetch(searchedText);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchedText]);
   const fetchSearchedData = async (value: string) => {
     try {
       const response = await fetch(
@@ -72,21 +91,12 @@ const Home: FC = () => {
       console.error('Fetching data failed:', error);
     }
   };
-
-  useEffect(() => {
-    if (searchedText.length > 0) {
-      debouncedFetch(searchedText);
-    } else {
-      setSuggestions([]);
-    }
-  }, [searchedText]);
-
   const debouncedFetch = useRef(
     debounce((nextValue: string) => fetchSearchedData(nextValue), 500)
   ).current;
 
   return (
-    <section className="min-h-screen flex justify-center items-center py-12 md:py-20">
+    <section className="min-h-screen flex justify-center items-center py-12 md:py-20 z-10">
       <div className="container px-4 mx-auto">
         <div className="mb-12">
           <h1 className="text-center text-4xl md:text-6xl font-bold mb-6">
@@ -102,7 +112,7 @@ const Home: FC = () => {
             />
             {suggestions.length > 0 && (
               <div
-                className={` absolute top-[111%] bg-white border rounded min-w-[90%]`}
+                className={`absolute top-[111%] bg-white border rounded min-w-[90%] z-[100]`}
               >
                 <ul>
                   {suggestions.slice(0, 5).map((item, i) => (
@@ -141,30 +151,33 @@ const Home: FC = () => {
               </tr>
             </thead>
             <tbody>
-              {data.map((item, index) => (
-                <tr
-                  key={index}
-                  className="border-b border-neutral-200 text-center"
-                >
-                  <td className="whitespace-nowrap p-4 font-medium">
-                    <Link
-                      href={`/weather/lat=${item.coordinates.lat}&lon=${item.coordinates.lon}`}
-                    >
-                      {item.ascii_name}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap p-4">{item.cou_name_en}</td>
-                  <td className="whitespace-nowrap p-4">{item.timezone}</td>
-                  <td className="whitespace-nowrap p-4">
-                    <Link
-                      href={`/weather/lat=${item.coordinates.lat}&lon=${item.coordinates.lon}`}
-                      className="bg-primary rounded-md text-white text-sm font-medium px-5 py-2"
-                    >
-                      Check Weather
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {data &&
+                data.map((item, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-neutral-200 text-center"
+                  >
+                    <td className="whitespace-nowrap p-4 font-medium">
+                      <Link
+                        href={`/weather/lat=${item?.coordinates?.lat}&lon=${item?.coordinates?.lon}`}
+                      >
+                        {item.ascii_name}
+                      </Link>
+                    </td>
+                    <td className="whitespace-nowrap p-4">
+                      {item.cou_name_en}
+                    </td>
+                    <td className="whitespace-nowrap p-4">{item.timezone}</td>
+                    <td className="whitespace-nowrap p-4">
+                      <Link
+                        href={`/weather/lat=${item.coordinates?.lat}&lon=${item.coordinates?.lon}`}
+                        className="bg-primary rounded-md text-white text-sm font-medium px-5 py-2"
+                      >
+                        Check Weather
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
           <div ref={loader} />

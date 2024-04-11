@@ -7,7 +7,7 @@ import {
   convertUnixTimeToDate,
   convertUnixTimeToDay,
   convertUnixTimeToHour,
-  convertUnixTimeToTime,
+  convertUnixTimeToLocalTime,
   kelvinToCelsius,
   kelvinToFahrenheit,
 } from '@/utils/utilities';
@@ -87,6 +87,8 @@ const Weather: FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const newData = await response.json();
+      console.log(newData);
+
       setData(newData);
       // setting up background image
       switch (newData.weather[0].main.toLowerCase()) {
@@ -119,7 +121,9 @@ const Weather: FC = () => {
       const newData = await response.json();
       setHourlyData(newData.list);
 
-      const fullWeekData = newData.list.filter((_: any, index: number) => index % 8 === 0);
+      const fullWeekData = newData.list.filter(
+        (_: any, index: number) => index % 8 === 0
+      );
       setWeeklyData(fullWeekData);
     } catch (error) {
       console.error('Fetching data failed:', error);
@@ -143,24 +147,24 @@ const Weather: FC = () => {
           <div className="col-span-4 lg:col-span-3 bg-white bg-opacity-80 py-8 px-12">
             {/* city name and date */}
             <div className="flex justify-between items-center gap-4 text-lg md:text-2xl font-medium">
-              <h4>{data ? data?.name : <TextLoader />}</h4>
-              <p>{data ? convertUnixTimeToDate(data?.dt) : <TextLoader />}</p>
+              {data ? <h4>{data?.name}</h4> : <TextLoader />}
+              {data ? <p>{convertUnixTimeToDate(data?.dt)}</p> : <TextLoader />}
             </div>
             {/* temperature */}
             <div className="flex flex-col gap-y-6 justify-center items-center my-12 md:my-20 text-grayText">
-              {data && (
-                <h1 className=" text-5xl md:text-[180px] font-medium tracking-tighter">
-                  {data ? (
-                    inCelsius ? (
-                      `${kelvinToCelsius(data.main.temp).toFixed(0)}°`
-                    ) : (
-                      `${kelvinToFahrenheit(data.main.temp).toFixed(0)}°`
-                    )
-                  ) : (
-                    <TextLoader />
-                  )}
-                  <span className="!text-3xl">{inCelsius ? 'C' : 'F'}</span>
-                </h1>
+              {data ? (
+                <div className="flex items-end">
+                  <h1 className="text-9xl md:text-[180px] !leading-none font-medium tracking-tighter">
+                    {inCelsius
+                      ? `${kelvinToCelsius(data.main.temp).toFixed(0)}°`
+                      : `${kelvinToFahrenheit(data.main.temp).toFixed(0)}°`}
+                  </h1>
+                  <span className="!text-3xl mb-4">
+                    {inCelsius ? 'C' : 'F'}
+                  </span>
+                </div>
+              ) : (
+                <TextLoader />
               )}
               <div className="flex items-center gap-x-8">
                 <h5>
@@ -215,9 +219,13 @@ const Weather: FC = () => {
                 >
                   View In {inCelsius ? 'Fahrenheit' : 'Celsius'}
                 </button>
-                <h6 className="text-2xl font-medium mt-6 mb-12">
-                  {data ? convertUnixTimeToTime(data?.dt) : <TextLoader />}
-                </h6>
+                {data ? (
+                  <h6 className="text-2xl font-medium mt-6 mb-12">
+                    {convertUnixTimeToLocalTime(data?.dt, data?.timezone)}
+                  </h6>
+                ) : (
+                  <TextLoader />
+                )}
               </div>
 
               {/* additional data */}

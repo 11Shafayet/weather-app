@@ -7,8 +7,12 @@ export const convertUnixTimeToDate = (time: number): string => {
   });
 };
 
-export const convertUnixTimeToTime = (time: number): string => {
+export const convertUnixTimeToLocalTime = (
+  time: number,
+  timezone: number
+): string => {
   const date = new Date(time * 1000);
+  date.setSeconds(date.getSeconds() + timezone);
   return date.toLocaleString('en-US', {
     hour: 'numeric',
     minute: 'numeric',
